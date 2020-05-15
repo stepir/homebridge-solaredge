@@ -1,0 +1,30 @@
+{
+	"name": "homebridge-solaredge",
+	"version": "0.0.1",
+	"description": "A Homebridge plugin to pull SolarEdge Portal data into HomeKit as a light/humidity sensors accessory.",
+	"author": "stepir",
+	"license": "MIT",
+	"main": "index.js",
+	"keywords": [
+		"homebridge-plugin",
+		"SolarEdge",
+		"Solar",
+		"Inverter"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/stepir/homebridge-solaredge.git"
+	},
+	"bugs": {
+		"url": "http://github.com/stepir/homebridge-solaredge/issues"
+	},
+	"dependencies": {
+		"axios": "^0.19.2",
+		"axios-cache-adapter": "^2.5.0"
+	},
+	"devDependencies": {},
+	"engines": {
+		"homebridge": ">=0.2.0",
+		"node": ">=0.12.0"
+	}
+}
