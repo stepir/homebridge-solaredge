@@ -1,0 +1,334 @@
+const axios = require('axios');
+const setupCache = require('axios-cache-adapter').setupCache;
+
+var Service, Characteristic;
+
+const DEF_MIN_LUX = 0,
+      DEF_MAX_LUX = 25;
+
+const PLUGIN_NAME   = 'homebridge-solaredge';
+const ACCESSORY_NAME_GRID = 'SolarEdge GRID';
+const ACCESSORY_NAME_PV = 'SolarEdge PV';
+const ACCESSORY_NAME_HOUSE = 'SolarEdge HOUSE';
+const ACCESSORY_NAME_BATTERYINV = 'SolarEdge BATTERYINV';
+const ACCESSORY_NAME_BATTERY = 'SolarEdge BATTERY';
+
+module.exports = function(homebridge) {
+    Service = homebridge.hap.Service;
+	Characteristic = homebridge.hap.Characteristic;
+    homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME_GRID, SolarEdgeGRID);
+	homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME_PV, SolarEdgePV);	
+    homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME_HOUSE, SolarEdgeHOUSE);
+	homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME_BATTERYINV, SolarEdgeBATTERYINV);
+	homebridge.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME_BATTERY, SolarEdgeBATTERY);
+}
+
+/**
+ * Setup Cache For Axios to prevent additional requests
+ */
+const cache = setupCache({
+  maxAge: 1 * 1000 //in ms
+})
+
+const api = axios.create({
+  adapter: cache.adapter
+})
+
+/**
+ * Main API request with site overview data
+ *
+ * @param {siteID} the SolarEdge Site ID to be queried
+ * @param {apiKey} the SolarEdge monitoring API Key for access to the Site
+ */
+const getSiteData = async(siteID, apiKey) => {
+	try {
+	    return await api.get('https://monitoringapi.solaredge.com/site/'+siteID+'/currentPowerFlow?api_key='+apiKey)
+	} catch (error) {
+	    console.error(error)
+	}
+}
+
+/**
+ * Gets and returns the accessory's value in the correct format.
+ *
+ * @param {siteID} the SolarEdge Site ID to be queried
+ * @param {apiKey} the SolarEdge monitoring API Key for access to the Site
+ * @param (log) access to the homebridge logfile
+ * @return {bool} the value for the accessory
+ */
+const getAccessoryValue = async (siteID, apiKey, log) => {
+
+	// To Do: Need to handle if no connection
+	const SiteData = await getSiteData(siteID, apiKey)
+
+	if(SiteData) {
+		log.info('Data from API', SiteData.data.siteCurrentPowerFlow.GRID.currentPower);
+		if (SiteData.data.siteCurrentPowerFlow.GRID.currentPower == null) {
+			return 0
+		} else {
+			// Return positive value
+			return Math.abs(SiteData.data.siteCurrentPowerFlow.GRID.currentPower)
+		}
+	} else {
+		// No response SiteData return 0
+		return 0
+	}
+}
+
+class SolarEdgeGRID {
+    constructor(log, config) {
+    	this.log = log
+    	this.config = config
+
+    	this.service = new Service.LightSensor(this.config.name)
+
+    	this.name = config["name"];
+    	this.manufacturer = config["manufacturer"] || "GRID Provider";
+	    this.model = config["model"] || "GRID Meter";
+	    this.serial = config["serial"] || "GRID Contract";
+	    this.site_id = config["site_id"];
+	    this.api_key = config["api_key"];
+	    this.minLux = config["min_lux"] || DEF_MIN_LUX;
+    	this.maxLux = config["max_lux"] || DEF_MAX_LUX;
+    }
+
+    getServices () {
+    	const informationService = new Service.AccessoryInformation()
+        .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
+        .setCharacteristic(Characteristic.Model, this.model)
+        .setCharacteristic(Characteristic.SerialNumber, this.serial)
+
+        this.service.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+	      .on('get', this.getOnCharacteristicHandler.bind(this))
+
+	    return [informationService, this.service]
+    }
+
+    async getOnCharacteristicHandler (callback) {
+	    this.log(`calling getOnCharacteristicHandler`, await getAccessoryValue(this.site_id, this.api_key, this.log))
+
+	    callback(null, await getAccessoryValue(this.site_id, this.api_key, this.log))
+	}
+}
+
+const getAccessoryValue1 = async (siteID, apiKey, log) => {
+
+	// To Do: Need to handle if no connection
+	const SiteData = await getSiteData(siteID, apiKey)
+
+	if(SiteData) {
+		log.info('Data from API', SiteData.data.siteCurrentPowerFlow.PV.currentPower);
+		if (SiteData.data.siteCurrentPowerFlow.PV.currentPower == null) {
+			return 0
+		} else {
+			// Return positive value
+			return Math.abs(SiteData.data.siteCurrentPowerFlow.PV.currentPower)
+		}
+	} else {
+		// No response SiteData return 0
+		return 0
+	}
+}
+
+
+class SolarEdgePV {
+    constructor(log, config) {
+    	this.log = log
+    	this.config = config
+
+    	this.service = new Service.LightSensor(this.config.name)
+
+    	this.name = config["name"];
+    	this.manufacturer = config["manufacturer"] || "SolarEdge";
+	    this.model = config["model"] || "Inverter";
+	    this.serial = config["serial"] || "solaredge-inverter-1";
+	    this.site_id = config["site_id"];
+	    this.api_key = config["api_key"];
+	    this.minLux = config["min_lux"] || DEF_MIN_LUX;
+    	this.maxLux = config["max_lux"] || DEF_MAX_LUX;
+    }
+
+    getServices () {
+    	const informationService = new Service.AccessoryInformation()
+        .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
+        .setCharacteristic(Characteristic.Model, this.model)
+        .setCharacteristic(Characteristic.SerialNumber, this.serial)
+
+        this.service.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+	      .on('get', this.getOnCharacteristicHandler.bind(this))
+
+	    return [informationService, this.service]
+    }
+
+    async getOnCharacteristicHandler (callback) {
+	    this.log(`calling getOnCharacteristicHandler`, await getAccessoryValue1(this.site_id, this.api_key, this.log))
+
+	    callback(null, await getAccessoryValue1(this.site_id, this.api_key, this.log))
+	}
+}
+
+const getAccessoryValue2 = async (siteID, apiKey, log) => {
+
+	// To Do: Need to handle if no connection
+	const SiteData = await getSiteData(siteID, apiKey)
+
+	if(SiteData) {
+		log.info('Data from API', SiteData.data.siteCurrentPowerFlow.LOAD.currentPower);
+		if (SiteData.data.siteCurrentPowerFlow.LOAD.currentPower == null) {
+			return 0
+		} else {
+			// Return positive value
+			return Math.abs(SiteData.data.siteCurrentPowerFlow.LOAD.currentPower)
+		}
+	} else {
+		// No response SiteData return 0
+		return 0
+	}
+}
+
+class SolarEdgeHOUSE {
+    constructor(log, config) {
+    	this.log = log
+    	this.config = config
+
+    	this.service = new Service.LightSensor(this.config.name)
+
+    	this.name = config["name"];
+    	this.manufacturer = config["manufacturer"] || "House";
+	    this.model = config["model"] || "House type";
+	    this.serial = config["serial"] || "House Address";
+	    this.site_id = config["site_id"];
+	    this.api_key = config["api_key"];
+	    this.minLux = config["min_lux"] || DEF_MIN_LUX;
+    	this.maxLux = config["max_lux"] || DEF_MAX_LUX;
+    }
+
+    getServices () {
+    	const informationService = new Service.AccessoryInformation()
+        .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
+        .setCharacteristic(Characteristic.Model, this.model)
+        .setCharacteristic(Characteristic.SerialNumber, this.serial)
+
+        this.service.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+	      .on('get', this.getOnCharacteristicHandler.bind(this))
+
+	    return [informationService, this.service]
+    }
+
+    async getOnCharacteristicHandler (callback) {
+	    this.log(`calling getOnCharacteristicHandler`, await getAccessoryValue2(this.site_id, this.api_key, this.log))
+
+	    callback(null, await getAccessoryValue2(this.site_id, this.api_key, this.log))
+	}
+}
+
+const getAccessoryValue3 = async (siteID, apiKey, log) => {
+
+	// To Do: Need to handle if no connection
+	const SiteData = await getSiteData(siteID, apiKey)
+
+	if(SiteData) {
+		log.info('Data from API', SiteData.data.siteCurrentPowerFlow.STORAGE.currentPower);
+		if (SiteData.data.siteCurrentPowerFlow.STORAGE.currentPower == null) {
+			return 0
+		} else {
+			// Return positive value
+			return Math.abs(SiteData.data.siteCurrentPowerFlow.STORAGE.currentPower)
+		}
+	} else {
+		// No response SiteData return 0
+		return 0
+	}
+}
+
+class SolarEdgeBATTERYINV {
+    constructor(log, config) {
+    	this.log = log
+    	this.config = config
+
+    	this.service = new Service.LightSensor(this.config.name)
+
+    	this.name = config["name"];
+    	this.manufacturer = config["manufacturer"] || "SolarEdge";
+	    this.model = config["model"] || "Inverter";
+	    this.serial = config["serial"] || "solaredge-inverter-1";
+	    this.site_id = config["site_id"];
+	    this.api_key = config["api_key"];
+	    this.minLux = config["min_lux"] || DEF_MIN_LUX;
+    	this.maxLux = config["max_lux"] || DEF_MAX_LUX;
+    }
+
+    getServices () {
+    	const informationService = new Service.AccessoryInformation()
+        .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
+        .setCharacteristic(Characteristic.Model, this.model)
+        .setCharacteristic(Characteristic.SerialNumber, this.serial)
+
+        this.service.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+	      .on('get', this.getOnCharacteristicHandler.bind(this))
+
+	    return [informationService, this.service]
+    }
+
+    async getOnCharacteristicHandler (callback) {
+	    this.log(`calling getOnCharacteristicHandler`, await getAccessoryValue3(this.site_id, this.api_key, this.log))
+
+	    callback(null, await getAccessoryValue3(this.site_id, this.api_key, this.log))
+	}
+}
+	
+const getAccessoryValue4 = async (siteID, apiKey, log) => {
+
+	// To Do: Need to handle if no connection
+	const SiteData = await getSiteData(siteID, apiKey)
+
+	if(SiteData) {
+		log.info('Data from API', SiteData.data.siteCurrentPowerFlow.STORAGE.chargeLevel);
+		if (SiteData.data.siteCurrentPowerFlow.STORAGE.chargeLevel == null) {
+			return 0
+		} else {
+			// Return positive value
+			return Math.abs(SiteData.data.siteCurrentPowerFlow.STORAGE.chargeLevel)
+		}
+	} else {
+		// No response SiteData return 0
+		return 0
+	}
+}
+
+
+	class SolarEdgeBATTERY {
+		constructor(log, config) {
+			this.log = log
+			this.config = config
+	
+			this.service = new Service.HumiditySensor(this.config.name)
+	
+			this.name = config["name"];
+			this.manufacturer = config["manufacturer"] || "LGCHEM";
+			this.model = config["model"] || "LGCHEM";
+			this.serial = config["serial"] || "solaredge-LGCHEM";
+			this.site_id = config["site_id"];
+			this.api_key = config["api_key"];
+			this.minLux = config["min_lux"] || DEF_MIN_LUX;
+			this.maxLux = config["max_lux"] || DEF_MAX_LUX;
+		}
+	
+		getServices () {
+			const informationService = new Service.AccessoryInformation()
+			.setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
+			.setCharacteristic(Characteristic.Model, this.model)
+			.setCharacteristic(Characteristic.SerialNumber, this.serial)
+	
+			this.service.getCharacteristic(Characteristic.CurrentRelativeHumidity)
+			  .on('get', this.getOnCharacteristicHandler.bind(this))
+	
+			return [informationService, this.service]
+		}
+	
+		async getOnCharacteristicHandler (callback) {
+			this.log(`calling getOnCharacteristicHandler`, await getAccessoryValue4(this.site_id, this.api_key, this.log))
+	
+			callback(null, await getAccessoryValue4(this.site_id, this.api_key, this.log))
+		}
+}
