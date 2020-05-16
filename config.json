@@ -1,0 +1,61 @@
+{
+	"bridge": {
+		"name": "Solaredge",
+		"username": "EE:AF:AF:A3:CE:AA",
+		"port": 51826,
+		"pin": "031-45-124"
+	},
+	"accessories": [
+    	{
+			"name": "Grid KW",
+			"manufacturer": "name of your provider",
+			"model": "type of contract",
+			"serial": "numbero of contract",
+			"site_id": "your Solaredge site ID, can be found accessing their portal",
+			"api_key": "your Solaredge API, can be found accessing their portal",
+			"accessory": "SolarEdge GRID"
+    	},
+    	
+    	{
+			"name": "Production KW",
+			"manufacturer": "SolarEdge",
+			"model": "model of your production inverter",
+			"serial": "serial of your production inverter",
+			"site_id": "your Solaredge site ID, can be found accessing their portal",
+			"api_key": "your Solaredge API, can be found accessing their portal",
+			"accessory": "SolarEdge PV"
+    	},
+
+    	{
+			"name": "Home KW",
+			"manufacturer": "field available",
+			"model": "field available",
+			"serial": "your zip codee",
+			"site_id": "your Solaredge site ID, can be found accessing their portal",
+			"api_key": "your Solaredge API, can be found accessing their portal",
+			"accessory": "SolarEdge HOUSE"
+    	},
+
+    	{
+			"name": "Inverter KW",
+			"manufacturer": "Solaredge",
+			"model": "Inverter model associated with your battery",
+			"serial": "Inverter S/N associated with your battery",
+			"site_id": "your Solaredge site ID, can be found accessing their portal",
+			"api_key": "your Solaredge API, can be found accessing their portal",
+			"accessory": "SolarEdge BATTERYINV"
+    	},
+
+    	{
+			"name": "Battery",
+			"manufacturer": "Battery manufacture",
+			"model": "Battery model",
+			"serial": "Battery s/n",
+			"site_id": "935902",
+			"api_key": "your Solaredge site ID, can be found accessing their portal",
+			"accessory": "your Solaredge API, can be found accessing their portal"
+    	}
+
+    	
+  	]
+}
